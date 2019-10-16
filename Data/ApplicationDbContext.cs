@@ -17,5 +17,20 @@ namespace Odp.Data
             IOptions<OperationalStoreOptions> operationalStoreOptions) : base(options, operationalStoreOptions)
         {
         }
+        public DbSet<Odp.Models.ApplicationUser> ApplicationUser { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
+
+            /*#region "Seed data"
+            builder.Entity<IdentityRole>().HasData(
+                new { Id = "1", Name = "Admin", NormalisedName = "ADMIN" },
+                new { Id = "2", Name = "Customer", NormalisedName = "CUSTOMER" },
+                new { Id = "3", Name = "Author", NormalisedName = "AUTHOR" },
+                new { Id = "4", Name = "Moderator", NormalisedName = "MODERATOR" }
+            );
+            #endregion*/
+        }
     }
 }
