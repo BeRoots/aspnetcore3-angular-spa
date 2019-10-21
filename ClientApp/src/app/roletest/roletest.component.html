@@ -1,0 +1,20 @@
+<h1 id="tableLabel">Role Test</h1>
+
+<p>This component demonstrates fetching data from the server.</p>
+
+<p *ngIf="!dates"><em>Loading...</em></p>
+
+<table class='table table-striped' aria-labelledby="tableLabel" *ngIf="forecasts">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Role</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let thedate of dates">
+      <td>{{ thedate.date }}</td>
+      <td>only admin can see this</td>
+    </tr>
+  </tbody>
+</table>
