@@ -11,6 +11,7 @@ using Odp.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System;
 
 namespace Odp
 {
@@ -21,11 +22,34 @@ namespace Odp
             Configuration = configuration;
         }
 
+        readonly string MyAllowSpecificOdpApiOrigin = "_AllowSpecificOdpApiOrigin";
+        readonly string MyAllowAllOrigin = "_AllowAllOrigin";
+
         public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddCors(options =>
+            {
+                options.AddPolicy(MyAllowSpecificOdpApiOrigin,
+                    builder => {
+                        builder.WithOrigins(Configuration["Security:Cors:Url"])
+                        .AllowAnyHeader()
+                        .WithMethods("GET", "POST")
+                        .AllowCredentials().Build();
+                    }
+                );
+                options.AddPolicy(MyAllowAllOrigin,
+                    builder => {
+                        builder.AllowAnyOrigin()
+                        .AllowAnyHeader()
+                        .WithMethods("GET")
+                        .DisallowCredentials().Build();
+                    }
+                );
+            });
+
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection"))
             );
@@ -38,6 +62,7 @@ namespace Odp
 
             services.AddAuthentication()
                 .AddIdentityServerJwt();
+
             services.AddControllersWithViews();
             services.AddRazorPages();
             // In production, the Angular files will be served from this directory
@@ -48,7 +73,7 @@ namespace Odp
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IServiceProvider serviceProvider)
         {
             if (env.IsDevelopment())
             {
@@ -69,6 +94,7 @@ namespace Odp
                 app.UseSpaStaticFiles();
             }
 
+            //app.UseCors("AllowSpecificOdpApiOrigin"); SEE UseEndpoint BELOW
             app.UseRouting();
 
             app.UseAuthentication();
@@ -76,9 +102,10 @@ namespace Odp
             app.UseAuthorization();
             app.UseEndpoints(endpoints =>
             {
+                endpoints.MapDefaultControllerRoute().RequireCors("AllowAllOrigin");
                 endpoints.MapControllerRoute(
-                    name: "default",
-                    pattern: "{controller}/{action=Index}/{id?}");
+                    name: "apiDefault",
+                    pattern: "{controller}/{action=Index}/{id?}").RequireCors("AllowSpecificOdpApiOrigin");
                 endpoints.MapRazorPages();
             });
 
