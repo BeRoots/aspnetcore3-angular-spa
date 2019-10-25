@@ -22,41 +22,45 @@ namespace Odp
             Configuration = configuration;
         }
 
-//        readonly string MyAllowSpecificOdpApiOrigin = "_AllowSpecificOdpApiOrigin";
-//        readonly string MyAllowAllOrigin = "_AllowAllOrigin";
 
         public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-/*            services.AddCors(options =>
-            {
-                options.AddPolicy(MyAllowSpecificOdpApiOrigin,
-                    builder => {
-                        builder.WithOrigins(Configuration["Security:Cors:Url"])
-                        .WithMethods("GET", "POST")
-                        //.WithHeaders("authorize")
-                        .AllowCredentials().Build();
-                    }
-                );
-                options.AddPolicy(MyAllowAllOrigin,
-                    builder => {
-                        builder.AllowAnyOrigin()
-                        .AllowAnyHeader()
-                        .WithMethods("GET")
-                        .DisallowCredentials().Build();
-                    }
-                );
-            });*/
-
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection"))
             );
 
+            /* @TODO Remeber to test again later: https://github.com/aspnet/AspNetCore.Docs/issues/14944
             services.AddDefaultIdentity<ApplicationUser>()
-                .AddRoles<IdentityRole>()
-                .AddEntityFrameworkStores<ApplicationDbContext>();
+                            .AddRoles<IdentityRole>()
+                            .AddEntityFrameworkStores<ApplicationDbContext>();*/
+
+            services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+                    {
+                        options.Password.RequireDigit = true;
+                        options.Password.RequiredLength = 6;
+                        options.Password.RequireNonAlphanumeric = false;
+                        options.Password.RequireUppercase = true;
+                        options.Password.RequireLowercase = true;
+                        options.Password.RequiredUniqueChars = 0;
+                        options.User.RequireUniqueEmail = true;
+                        //                    options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-._ @+";
+                        options.Lockout.DefaultLockoutTimeSpan = System.TimeSpan.FromMinutes(5);
+                        options.Lockout.MaxFailedAccessAttempts = 5;
+                        options.Lockout.AllowedForNewUsers = true;
+                        options.SignIn.RequireConfirmedEmail = true;
+                        options.SignIn.RequireConfirmedPhoneNumber = false;
+                        options.Stores.ProtectPersonalData = false; //if true, require IProtectedUserStore implementation
+//                                    options.Tokens.AuthenticatorIssuer = Configuration["Jwt:Issuer"];
+                        //                    options.Tokens.AuthenticatorTokenProvider = ;
+                        //                    options.Tokens.ChangeEmailTokenProvider = ;
+                        //                    options.Tokens.ChangePhoneNumberTokenProvider = ;
+                        //                    options.Tokens.EmailConfirmationTokenProvider = ;
+                        //                    options.Tokens.PasswordResetTokenProvider = ;
+                    })
+                    .AddEntityFrameworkStores<ApplicationDbContext>();
 
             services.AddIdentityServer()
                 .AddApiAuthorization<ApplicationUser, ApplicationDbContext>();
@@ -69,8 +73,8 @@ namespace Odp
                 options.AddPolicy("RequireLoggedIn", policy => policy.RequireRole("Admin","Customer",  "Author", "Moderator").RequireAuthenticatedUser());
                 options.AddPolicy("RequireAdministratorRole", policy => policy.RequireRole("Admin").RequireAuthenticatedUser());
                 options.AddPolicy("RequireCustomerRole", policy => policy.RequireRole("Customer").RequireAuthenticatedUser());
-                options.AddPolicy("RequireAuthorRole", policy => policy.RequireRole("Author").RequireAuthenticatedUser());
                 options.AddPolicy("RequireModeratorRole", policy => policy.RequireRole("Moderator").RequireAuthenticatedUser());
+                options.AddPolicy("RequireAuthorRole", policy => policy.RequireRole("Author").RequireAuthenticatedUser());
             });
 
             services.AddControllersWithViews();
@@ -104,20 +108,12 @@ namespace Odp
                 app.UseSpaStaticFiles();
             }
 
-            //app.UseCors("AllowSpecificOdpApiOrigin");
             app.UseRouting();
 
             app.UseAuthentication();
             app.UseIdentityServer();
             app.UseAuthorization();
-/*            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapDefaultControllerRoute().RequireCors("AllowAllOrigin");
-                endpoints.MapControllerRoute(
-                    name: "apiDefault",
-                    pattern: "{controller}/{action=Index}/{id?}").RequireCors("AllowSpecificOdpApiOrigin");
-                endpoints.MapRazorPages();
-            });*/
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllerRoute(
@@ -177,7 +173,7 @@ namespace Odp
                         Zipcode = 74950,
                         City = "Le Reposoir",
                         Country = "FRANCE",
-                        ConnectionTimestamp = (UInt32)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds,
+                        ConnectionTimestamp = (UInt32) DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds,
                         Email = "wwwbrtswww@gmail.com",
                         UserName = "wwwbrtswww@gmail.com",
                         SecurityStamp = Guid.NewGuid().ToString()

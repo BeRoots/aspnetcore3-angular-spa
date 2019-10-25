@@ -26,7 +26,7 @@ namespace Odp.Controllers
         }
 
         [HttpGet]
-        [Authorize("RequireAdministratorRole")]
+        [Authorize(Policy = "RequireAdministratorRole")]
         public IEnumerable<MyDate> Get()
         {
             var rng = new Random();
